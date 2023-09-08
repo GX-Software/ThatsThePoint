@@ -1,0 +1,450 @@
+﻿
+body {
+	font-family : Microsoft YaHei, SimHei, sans-serif;
+}
+
+.ttp_showbody {
+	margin: 0;
+	padding: 3em 0 4em 0;
+	border: 0;
+}
+
+select {
+	width : 60%;
+	font-size : 100%;
+	font-family : Microsoft YaHei, SimHei, sans-serif;
+}
+
+input, button, select {
+	font-size : 100%;
+	font-family : Microsoft YaHei, SimHei, sans-serif;
+	vertical-align: middle;
+	
+	border-style: solid;
+	border-width: 1px;
+	border-color: #777777;
+}
+
+/* 按钮样式 */
+.ttp_button {
+	border-spacing:0px;
+	border-style: solid;
+	border-color: #38f;
+	border-width: 1px;
+	
+	display: inline-block;
+	line-height: 2em; 
+	text-align: center;
+	vertical-align: middle;
+	background-color: #f8f8f8;
+	
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+/* 按钮样式完毕 */
+
+/* 编辑框样式 */
+.ttp_edit {
+	border-spacing:0px;
+	border-style: solid;
+	border-color: #777777;
+	border-width: 1px;
+	
+	display: inline-block;
+	line-height: 2em;
+	vertical-align: middle;
+	
+	margin: 5px 0 0 0;
+	padding: 0px;
+}
+.ttp_edit_in {
+	border-style: none;
+	width: 90%;
+	
+	margin: 0 0 0 8px;
+	padding: 0px;
+}
+/* 编辑框样式完毕 */
+
+/* 头部样式 */
+.ttp_head {
+	position: fixed;
+	width: 100%;
+	height: 3em;
+	top: 0;
+	z-index: 2;
+	
+	border-spacing:0px;
+	border-style: solid;
+	border-color: #777777;
+	border-width: 0 0 1px 0;
+	margin: 0;
+	padding: 0;
+	
+	vertical-align: middle;
+	line-height: 3em;
+	
+	background-color: white;
+}
+.ttp_title {
+	display: inline-block;
+	
+	font-size: 1.2em;
+	font-weight: bold;
+	
+	white-space: nowrap;
+	width: 70%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	
+	padding: 0 0 0 0.2em;
+}
+/* 头部样式完毕 */
+
+/* 脚部样式 */
+.ttp_tail {
+	position: fixed;
+	width: 100%;
+	height: 3em;
+	bottom: 0;
+	z-index: 2;
+	
+	border-spacing:0px;
+	border-style: solid;
+	border-color: #777777;
+	border-width: 1px 0 0 0;
+	margin: 0;
+	padding: 0;
+	
+	vertical-align: middle;
+	line-height: 3em;
+	
+	background-color: white;
+}
+/* 脚部样式完毕 */
+
+/* 正式内容样式 */
+.ttp_text {
+	margin: 0 8px 0 8px;
+}
+.ttp_mark {
+	border-style: solid;
+	border-color: #000000;
+	border-width: 2px;
+	
+	background-color: #FFA500;
+	box-shadow: 2px 2px 5px 1px rgb(192, 192, 192);
+	
+	padding: 8px;
+}
+.ttp_jumpto {
+	background-color: #ECFF1B;
+}
+table.ttp_table {
+	width: 100%;
+	border-spacing:0px;
+}
+th.ttp_table, td.ttp_table {
+	border-style: solid;
+	border-color: #777777;
+	border-width: 1px;
+}
+/* 正式内容样式完毕 */
+
+/* 菜单样式 */
+.ttp_option {
+	position: fixed;
+	z-index: 20; 
+	left: 10%;
+	right: 10%;
+	top: 10%;
+	bottom: 10%;
+	
+	background-color: #fff;
+	border-spacing: 0px;
+	border-style: solid;
+	border-color: #38f;
+	border-width: 3px;
+}
+.ttp_optiontitle {
+	position: absolute;
+	width: 100%;
+	height: 2em;
+	top: 0;
+	line-height: 2em;
+	
+	font-size: 2em;
+	font-weight: bold;
+	color: #00f;
+	
+	text-align: center;
+}
+.ttp_optionset {
+	position: absolute;
+	top: 4em;
+	left: 8px;
+	right: 8px;
+	bottom: 4em;
+	
+	overflow-y: auto;
+}
+.ttp_optioncancel {
+	position: absolute;
+	bottom: 0;
+	padding: 0 0 1em 0;
+	background-color: #fff;
+	
+	width: 100%;
+	text-align: center;
+}
+/* 菜单样式完毕 */
+
+/* 悬浮窗样式 */
+.ttp_float {
+	position: fixed;
+	z-index: 3;
+	width: 7em;
+	height: 6em;
+	
+	background-color: #fff;
+	box-shadow: 2px 2px 5px 1px rgb(192, 192, 192);
+	border-spacing: 0px;
+	border-style: solid;
+	border-color: #38f;
+	border-width: 2px;
+	
+	display: table;
+	text-align: center;
+}
+.ttp_floattext {
+	display: table-cell;
+	vertical-align: middle;
+	
+	font-weight: bold;
+	
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+.ttp_updownfloat {
+	position: fixed;
+	z-index: 2;
+	width: 2.5em;
+	height: 2.5em;
+	
+	background-color: #fff;
+	box-shadow: 2px 2px 5px 1px rgb(192, 192, 192);
+	border-spacing: 0px;
+	border-style: solid;
+	border-color: #38f;
+	border-width: 2px;
+	
+	display: inline-block;
+	line-height: 2.5em;
+	text-align: center;
+	vertical-align: middle;
+}
+/* 悬浮窗样式完毕 */
+
+/* 目录样式 */
+.ttp_volume {
+	line-height: 2em;
+	background-color: #AFEEEE;
+	
+	border-bottom: 1px solid #AFEEEE;
+	
+	font-weight: bold;
+	padding: 0;
+	white-space: nowrap;
+	overflow: auto;
+}
+.ttp_chapter {
+	line-height: 2em;
+	background-color: #E1FFFF;
+	
+	border-bottom: 1px solid #E1FFFF;
+	
+	font-weight: bold;
+	padding: 0 0 0 1em;
+	white-space: nowrap;
+	overflow: auto;
+}
+.ttp_section {
+	line-height: 2em;
+	background-color: #F0FFFF;
+	
+	border-bottom: 1px solid #F0FFFF;
+	
+	padding: 0 0 0 2em;
+	white-space: nowrap;
+	overflow: auto;
+}
+.ttp_section_sel {
+	line-height: 2em;
+	background-color: #F0FFFF;
+	
+	border-bottom: 1px solid #F0FFFF;
+	
+	padding: 0 0 0 2em;
+	white-space: nowrap;
+	overflow: auto;
+	
+	text-decoration: underline;
+}
+/* 目录样式完毕 */
+
+/* 引用窗样式 */
+.ttp_quote {
+	position: fixed;
+	top: 10%;
+	left: 5%;
+	width: 90%;
+	height: 80%;
+	z-index: 11;
+	
+	background-color: #fff;
+	border-spacing: 0px;
+	border-style: solid;
+	border-color: #38f;
+	border-width: 3px;
+}
+.ttp_quotetitle {
+	position: absolute;
+	width: 96%;
+	height: 2em;
+	top: 0;
+	line-height: 2em;
+	
+	font-weight: bold;
+	color: #000;
+	
+	margin: 0 2%;
+	display: inline-block;
+	vertical-align: middle;
+	white-space: nowrap;
+	
+	overflow-x: auto;
+}
+.ttp_quotecontent {
+	position: absolute;
+	top: 2.5em;
+	left: 2%;
+	bottom: 4em;
+	width: 96%;
+	
+	word-wrap: break-word;
+	word-break: break-all;
+	overflow-x: hidden;
+	overflow-y: auto;
+	
+	font-size: 90%;
+}
+/* 引用窗样式完毕 */
+
+/* 遮罩部分样式 */
+#veil {
+	width: 100%;
+	height: 100%;
+	background-color: #000;
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 10;
+	opacity: 0.3;
+	/*兼容IE8及以下版本浏览器*/
+	filter: alpha(opacity=30);
+}
+/* 遮罩部分样式完毕 */
+
+/* iOS风格CheckBox样式（高版本支持，保留） */
+/* 本部分参考https://blog.csdn.net/J_Y_X_8/article/details/51191844 */
+.check-switch {
+	-moz-appearance: none;
+	-webkit-appearance: none;
+	outline: none; 
+	display: inline-block;
+	cursor:pointer;
+	width: 50px;
+	height: 30px;
+	position: relative;
+	border: 1px solid #dfdfdf;
+	background-color: #fdfdfd;
+	box-shadow: #dfdfdf 0 0 0 0 inset;
+	border-radius: 30px;
+	background-clip: content-box;
+}
+.check-switch:before {
+	content: '';
+	width: 27px;
+	height: 27px;
+	position: absolute;
+	top: 0px;
+	left: 0;
+	border-radius: 30px;
+	background-color: #fff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); 
+}
+.check-switch:checked {
+	border-color: #64bd63;
+	box-shadow: #64bd63 0 0 0 16px inset;
+	background-color: #64bd63; 
+}
+.check-switch:checked:before {
+	left: 21px; 
+}
+.check-switch-anim {
+	transition: border cubic-bezier(0, 0, 0, 1) 0.4s, box-shadow cubic-bezier(0, 0, 0, 1) 0.4s; 
+}
+.check-switch-anim:before {
+	transition: left 0.3s; 
+}
+.check-switch-anim:checked {
+	box-shadow: #64bd63 0 0 0 16px inset;
+	background-color: #64bd63;
+	transition: border ease 0.4s, box-shadow ease 0.4s, background-color ease 1.2s;
+}
+.check-switch-anim:checked:before {
+	transition: left 0.3s;
+}
+
+/* iOS风格CheckBox样式完毕（兼容格式） */
+.ch_t{
+    display:none;
+}
+.ch_label{
+    display: inline-block;
+	line-height: 100px;
+	vertical-align: middle;
+	
+    width: 40px;
+    height: 25px;
+    background-color: #fdfdfd;
+    border-radius: 16px;
+    outline: none;
+    border: 1px solid #dfdfdf;
+}
+.ch_t:checked + .ch_label{
+    background-color: #64bd63;
+}
+.ch_t:checked + .ch_label:before{
+    left:37%;
+}
+.ch_label:before{
+    position:relative;
+    top:-1px;
+    content: "";
+    display: block;
+    width:60%;
+    height:100%;
+    background-color:#fff;
+    border-radius:20px;
+    border: 1px solid #ccc;
+}
+/* iOS风格CheckBox样式完毕 */

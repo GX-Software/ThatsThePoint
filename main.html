@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+<link rel='apple-touch-icon' href='img/icon-h.png' type='image/png' />
+<link rel='shortcut icon' href='img/icon-h.ico' type='image/vnd.microsoft.icon' />
+<link rel='icon' href='img/icon-h.png' type='image/png' />
+<link rel='bookmark' href='img/icon-h.ico' type='image/vnd.microsoft.icon' />
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name = "viewport" content = "width = device-width, height = device-height">
+
+<title>划重点</title>
+
+<link rel = "stylesheet" type = "text/css" href="css/style.css" />
+
+<script type = "text/javascript" src = "js/common.js"></script>
+<script type = "text/javascript" src = "js/nightmode.js"></script>
+<script type = "text/javascript" src = "js/main.js"></script>
+
+</head>
+
+<body onload = "initIndex()">
+
+<p>
+	<div class = "ttp_button" style = "width: 8em;" id = "night" onclick = "indexNightMode(true)">夜间模式</div>
+</p>
+
+<h2 style = "vertical-align: middle;">
+	<img id = "titleicon" src = "img/icon.png" style = "height : 50px"></img><div style = "margin: 0 0 0 10px; display: inline-block">划重点</div>
+</h2>
+
+<div style = "margin-top: 8px;" id = "curlib">当前知识库：未打开</div>
+
+<div style = "margin-top: 8px;">
+	<input type = "file" id = "open" accept = ".jpeg,.jpg,.xml" style = "display: none;" onchange = "openFile();">
+	<label for = "open" onclick = "checkOpenLib()"><div class = "ttp_button" style = "width: 8em;">打开知识库</div></label>
+</div>
+<hr/>
+<p>
+	<div class = "ttp_button" style = "width: 8em;" onclick = "setBtnHref('show.html')">开始学习</div>
+</p>
+
+<p>
+	<div class = "ttp_button" style = "width: 8em;" onclick = "startMake('maker.html')">开始制作</div>
+</p>
+
+<hr />
+<small>GX Software 2020-2023 by 南郊居士</small><br />
+<small>版本号：V0.3 Beta</small><br/>
+<small>界面完成日期：2020/3/2 21:51</small>
+
+</body>
+</html>

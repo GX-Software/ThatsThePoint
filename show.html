@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+<link rel='apple-touch-icon' href='img/icon-h.png' type='image/png' />
+<link rel='shortcut icon' href='img/icon-h.ico' type='image/vnd.microsoft.icon' />
+<link rel='icon' href='img/icon-h.png' type='image/png' />
+<link rel='bookmark' href='img/icon-h.ico' type='image/vnd.microsoft.icon' />
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name = "viewport" content = "width = device-width, height = device-height, maximum-scale = 1.0, user-scalable = no">
+
+<title>划重点</title>
+
+<link rel = "stylesheet" type = "text/css" href="css/style.css" />
+
+<script type = "text/javascript" src = "js/common.js"></script>
+<script type = "text/javascript" src = "js/nightmode.js"></script>
+<script type = "text/javascript" src = "js/show.js"></script>
+
+</head>
+
+<body onload = "initShowList()" class = "ttp_showbody" onscroll = "refreshFloat()">
+
+<div id = "veil" style = "display: none;"></div>
+<div class = "ttp_head">
+	<span class = "ttp_title" id = "title"></span>
+	<div style = "height: 100%; float: right; vertical-align: middle; padding: 0 8px 0 0;">
+		<div id = "contentbtn" class = "ttp_button" style = "width: 2em;" onclick = "switchContent()">目</div>
+		<div id = "optionbtn" class = "ttp_button" style = "width: 2em;" onclick = "option(true)">设</div>
+	</div>
+</div>
+
+<div class = "ttp_tail">
+	<div style = "display: inline-block; height: 100%; vertical-align: middle; padding: 0 0 0 8px;">
+		<div class = "ttp_button" style = "width: 8em;" onclick = "pre()">上一节</div>
+	</div>
+	<div style = "height: 100%; float: right; vertical-align: middle; padding: 0 8px 0 0;">
+		<div class = "ttp_button" style = "width: 8em;" onclick = "next()">下一节</div>
+	</div>
+</div>
+
+<div class = "ttp_option" style = "display: none;">
+	<div class = "ttp_optiontitle">选项</div>
+	<div class = "ttp_optionset">
+		<div style = "vertical-align: middle; border-bottom: 1px solid #777777;">
+			<span style = "display: inline-block; font-size: 18px; line-height: 60px;">夜间模式</span>
+			<div style = "float: right; vertical-align: middle; line-height: 60px;">
+				<input type = "checkbox" class = "ch_t" id = "ch_nightmode" /><label class = "ch_label" for = "ch_nightmode" onclick = "setShow('night')"></label>
+			</div>
+		</div>
+		<div style = "vertical-align: middle; border-bottom: 1px solid #777777;">
+			<span style = "display: inline-block; font-size: 18px; line-height: 60px;">显示卷名</span>
+			<div style = "float: right; vertical-align: middle; line-height: 60px;">
+				<input type = "checkbox" class = "ch_t" id = "ch_showvolume" /><label class = "ch_label" for = "ch_showvolume" onclick = "setShow('volume')"></label>
+			</div>
+		</div>
+		<div style = "vertical-align: middle; border-bottom: 1px solid #777777;">
+			<span style = "display: inline-block; font-size: 18px; line-height: 60px;">显示章名</span>
+			<div style = "float: right; vertical-align: middle; line-height: 60px;">
+				<input type = "checkbox" class = "ch_t" id = "ch_showchapter" checked /><label class = "ch_label" for = "ch_showchapter" onclick = "setShow('chapter')"></label>
+			</div>
+		</div>
+		<div style = "vertical-align: middle; border-bottom: 1px solid #777777;">
+			<span style = "display: inline-block; font-size: 18px; line-height: 60px;">显示节名</span>
+			<div style = "float: right; vertical-align: middle; line-height: 60px;">
+				<input type = "checkbox" class = "ch_t" id = "ch_showsection" checked /><label class = "ch_label" for = "ch_showsection" onclick = "setShow('section')"></label>
+			</div>
+		</div>
+		<div style = "vertical-align: middle; border-bottom: 1px solid #777777;">
+			<span style = "display: inline-block; font-size: 18px; line-height: 60px;">显示悬浮窗</span>
+			<div style = "float: right; vertical-align: middle; line-height: 60px;">
+				<input type = "checkbox" class = "ch_t" id = "ch_showfloat" checked /><label class = "ch_label" for = "ch_showfloat" onclick = "setShow('float')"></label>
+			</div>
+		</div>
+		<div style = "vertical-align: middle; border-bottom: 1px solid #777777;">
+			<span style = "display: inline-block; font-size: 18px; line-height: 60px;">启用页内搜索</span>
+			<div style = "float: right; vertical-align: middle; line-height: 60px;">
+				<input type = "checkbox" class = "ch_t" id = "ch_showsearch" checked /><label class = "ch_label" for = "ch_showsearch" onclick = "setShow('search')"></label>
+			</div>
+		</div>
+		<div style = "vertical-align: middle; border-bottom: 1px solid #777777;">
+			<span id = "size" style = "display: inline-block; font-size: 18px; line-height: 60px;">字体大小×1</span>
+			<div style = "float: right; vertical-align: middle; line-height: 60px;">
+				<div class = "ttp_button" id = "enlarge" style = "width: 2em; margin: 0 8px 0 0;" onclick = "setShow('enlarge')">+</div><div class = "ttp_button" id = "shrink" style = "width: 2em;" onclick = "setShow('shrink')">-</div>
+			</div>
+		</div>
+	</div>
+	<div class = "ttp_optioncancel"><div class = "ttp_button" style = "width: 8em;" onclick = "option(false)">关闭</div></div>
+</div>
+
+<div class = "ttp_float" style = "display: none;">
+	<div class = "ttp_floattext">
+		<div id = "float_pos">当前位置<br/>0%</div>
+		<small><div id = "float_time">本节学习时间<br/>0分0秒</div></small>
+	</div>
+</div>
+
+<div class = "ttp_updownfloat" id = "floatup" style = "bottom: 8em; right: 1em;" onclick = "findNext('up')">↑</div>
+<div class = "ttp_updownfloat" id = "floatdown" style = "bottom: 4em; right: 1em;" onclick = "findNext('down')">↓</div>
+
+<div id = "textPage" style = "margin: 0 8px 0 8px;">
+	<div class = "ttp_text" id = "text"></div>
+	<hr style = "margin-left: 8px; margin-right: 8px;" />
+	<small style = "margin-left: 8px; margin-right: 8px;" >GX Software 2020 by 南郊居士</small>
+</div>
+
+<div id = "contentPage" style = "display: none;">
+	<div style = "position: fixed; margin: 0; height: 4em; width: 100%; top: 3em; background-color: #FFFFFF; border-bottom: 1px solid #777777;">
+		<div style = "margin: 1em 8px 0 8px;">
+		<div class = "ttp_edit" style = "width: 70%;"><input class = "ttp_edit_in" type = "text" id = "search" maxlength = "10" onfocus = "this.select()" /></div>
+		<div class = "ttp_button" style = "width: 4em;" onclick = "searchList()">筛选</div>
+		</div>
+	</div>
+	<div  style = "margin: 4em 8px 0 8px;">
+	<div id = "list"></div>
+		<div style = "margin: 0 0 8px 0;">
+			<hr />
+			<small>GX Software 2020 by 南郊居士</small>
+		</div>
+	</div>
+</div>
+
+<div class = "ttp_quote" id = "quotePage" style = "display: none;">
+	<div class = "ttp_quotetitle" id = "quoteTitle"></div>
+	<div class = "ttp_quotecontent" id = "quoteContent"></div>
+	<div class = "ttp_optioncancel"><div class = "ttp_button" style = "width: 8em;" onclick = "quote('return')">关闭</div></div>
+</div>
+
+</body>
+</html>

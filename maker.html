@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang = "zh" style = "height: 100%;">
+<head>
+	
+<link rel='apple-touch-icon' href='img/icon-h.png' type='image/png' />
+<link rel='shortcut icon' href='img/icon-h.ico' type='image/vnd.microsoft.icon' />
+<link rel='icon' href='img/icon-h.png' type='image/png' />
+<link rel='bookmark' href='img/icon-h.ico' type='image/vnd.microsoft.icon' />
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name = "viewport" content = "width = device-width, height = device-height, maximum-scale = 1.0, user-scalable = no">
+
+<title>重点制作器</title>
+
+<link rel = "stylesheet" type = "text/css" href="css/style.css" />
+<style type = "text/css">
+.showwindow {
+	width: 48%;
+	height: 95%;
+	float: right;
+	border: 1px solid grey;
+	padding: 8px;
+	
+	word-wrap: break-word;
+	word-break: break-all;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+.ttp_signal {
+	position: fixed;
+	z-index: 3; 
+	left: 5%;
+	right: 50%;
+	top: 5%;
+	bottom: 50%;
+	
+	background-color: #fff;
+	border-spacing:0px;
+	border-style: solid;
+	border-color: #38f;
+	border-width: 3px;
+}
+
+.ttp_check {
+	position: fixed;
+	z-index: 4;
+	left: 5%;
+	right: 5%;
+	top: 5%;
+	bottom: 5%;
+	
+	background-color: #fff;
+	border-spacing:0px;
+	border-style: solid;
+	border-color: #38f;
+	border-width: 3px;
+}
+.ttp_checkin {
+	position: absolute;
+	left: 1%;
+	width: 98%;
+	top: 1%;
+	bottom: 4em;
+	
+	overflow-y: auto;
+}
+.ttp_sourcein {
+	position: absolute;
+	left: 1em;
+	right: 1em;
+	top: 1em;
+	bottom: 4em;
+}
+
+table {
+	border-spacing:0px;
+	border-style: solid;
+	border-color: #777777;
+	border-width: 1px;
+	
+	font-size: 1em;
+	border-collapse:collapse;
+}
+th.signal, td.signal {
+	border-style: solid;
+	border-color: #777777;
+	border-width: 1px;
+	
+	width: 5em;
+	text-align:center;
+}
+th.check, td.check {
+	border-style: solid;
+	border-color: #777777;
+	border-width: 1px;
+	
+	text-align: left;
+	
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+tr.alt th, tr.alt td
+{
+	background: #EAF2D3;
+}
+</style>
+
+<script type = "text/javascript" src = "js/common.js"></script>
+<script type = "text/javascript" src = "js/maker.js"></script>
+
+</head>
+
+<body onload = "initMake()">
+
+<div id = "unlock">
+<div style = "margin: 0 0 5px 0;">
+<h2 style = "vertical-align: middle; display: inline-block;"><span>重点制作器 V0.4</span></h2>
+<div id = "curfile" style = "display: inline-block; margin: 0 0 0 2em;">当前题库：未打开</div>
+</div>
+<div style = "margin: 0 0 5px 0;">
+	当前卷：<select id = "curVolume" style = "width: 12em;" onchange = "refreshChapterList('cur')"></select>
+	当前章：<select id = "curChapter" style = "width: 12em;" onchange = "refreshSectionList('cur')"></select>
+	当前节：<select id = "curSection" style = "width: 12em;"></select>
+	<input type = "file" id = "open" accept = ".jpeg,.jpg,.xml" style = "display: none;" onchange = "openFile();">
+	<div class = "ttp_button" style = "width: 8em;" onclick = "gotoSection()">打开节</div>
+	<div style = "float: right;">
+		<label for = "open" onclick = "checkChange()"><div class = "ttp_button" style = "width: 8em;">打开知识库...</div></label>
+	</div>
+</div>
+<div style = "margin: 0 0 5px 0;">
+	<div class = "ttp_button" style = "width: 8em;" onclick = "makeNew('volume')">新建卷</div>
+	<div class = "ttp_button" style = "width: 8em;" onclick = "makeNew('chapter')">新建章</div>
+	<div class = "ttp_button" style = "width: 8em;" onclick = "makeNew('section')">新建节</div>
+	<div class = "ttp_button" style = "width: 8em;" onclick = "makeDel()">删除</div>
+	<div class = "ttp_button" style = "width: 8em;" onclick = "beginEdit(true)">开始编辑</div>
+	<div style = "float: right;">
+		<div class = "ttp_button" style = "width: 8em;" onclick = "saveFile('image')">生成图片库...</div>
+		<div class = "ttp_button" style = "width: 8em;" onclick = "saveFile('xml')">生成xml库...</div>
+		<div class = "ttp_button" style = "width: 8em;" onclick = "makeNew('library')">新建知识库</div>
+	</div>
+</div>
+</div>
+
+<div style = "height: 45em; margin: 4px;">
+	<div style = "display: inline-block; width: 49%;">
+		<textarea id = "input" style = "width: 100%; height: 35em; border: 1px solid grey; resize: none;" oninput = "changeText()"></textarea><br/>
+		<div style = "margin: 0 0 5px 0;">
+			<input id = "intend" type = "checkbox" checked /><label for = "intend">开头空两格</label>
+			<input id = "parabold" type = "checkbox" /><label for = "parabold">全段加粗</label>
+			<input id = "paracenter" type = "checkbox" /><label for = "paracenter">全段居中</label>
+			<input id = "paralist" type = "checkbox" /><label for = "paralist">列表项</label>
+			<div class = "ttp_button" style = "width: 8em; margin: 0 0 0 1em;" onclick = "add('para')">添加段落</div>
+			<div class = "ttp_button" style = "width: 8em; float: right;" onclick = "undo()">撤销</div>
+		</div>
+		<div style = "margin: 0 0 5px 0;">
+			<input id = "addcolor" type = "checkbox" checked /><label for = "addcolor">添加颜色</label>
+			<input id = "red" type = "radio" name = "color" checked /><label for = "red" style = "color: #FF0000;">红色</label>
+			<input id = "green" type = "radio" name = "color" /><label for = "green" style = "color: #008000;">绿色</label>
+			<input id = "yellow" type = "radio" name = "color" /><label for = "yellow" style = "color: #FFD700;">黄色</label>
+			<input id = "blue" type = "radio" name = "color" /><label for = "blue" style = "color: #0000FF;">蓝色</label>
+			<input id = "black" type = "radio" name = "color" /><label for = "black" style = "color: #000000;">仅加粗</label>
+		</div>
+		<div style = "margin: 0 0 5px 0;">
+			<input id = "addline" type = "checkbox" /><label for = "addline">添加修饰线</label>
+			<input id = "straight" type = "radio" name = "line" checked /><label for = "straight" style = "text-decoration:underline;">直线</label>
+			<input id = "wavy" type = "radio" name = "line" /><label for = "wavy" style = "text-decoration:underline; text-decoration-style: wavy;">波浪线</label>
+			<input id = "double" type = "radio" name = "line" /><label for = "double" style = "text-decoration:underline; text-decoration-style: double;">双线</label>
+			<input id = "through" type = "radio" name = "line" /><label for = "double" style = "text-decoration:line-through;">删除线</label>
+			<div class = "ttp_button" style = "width: 8em; margin: 0 0 0 1em;" onclick = "add('key')">添加重点</div>
+			<div class = "ttp_button" style = "width: 8em; float: right;" onclick = "showTest()">检查效果</div>
+		</div>
+		<div style = "margin: 0 0 5px 0;">
+			<div class = "ttp_button" style = "width: 8em;" onclick = "add('mark')">添加笔记</div>
+			<div class = "ttp_button" style = "width: 8em;" onclick = "add('sup')">添加上标</div>
+			<div class = "ttp_button" style = "width: 8em;" onclick = "add('sub')">添加下标</div>
+			<div class = "ttp_button" style = "width: 8em;" onclick = "showSignal(true)">特殊字符</div>
+			<div class = "ttp_button" style = "width: 8em; float: right;" onclick = "fix()">定位</div>
+		</div>
+		<div style = "margin: 0 0 5px 0;">
+			<input type = "file" id = "files" accept = ".xml" style = "display: none;" onchange = "fileImport();">
+			卷：<select id = "selectVolume" style = "width: 8em;" onchange = "refreshChapterList('sel')"></select>
+			章：<select id = "selectChapter" style = "width: 8em;" onchange = "refreshSectionList('sel')"></select>
+			节：<select id = "selectSection" style = "width: 8em;"></select>
+			<div class = "ttp_button" style = "width: 8em;" onclick = "openCheckWindow()">检查段落</div>
+		</div>
+		<div style = "margin: 0 0 5px 0;">
+			<div class = "ttp_edit" id = "quotes" style = "width: 8em;"><input class = "ttp_edit_in" type = "text" id = "quote" maxlength = "16" /></div>
+			<div class = "ttp_button" style = "width: 8em;" onclick = "add('quote')">添加引用</div>
+			<input id = "addanchor" type = "checkbox" /><label for = "addanchor">为本段添加锚点：</label>
+			<div class = "ttp_edit" id = "anchors" style = "width: 5em;"><input class = "ttp_edit_in" type = "number" id = "anchor" maxlength = "3" onfocus = "this.select()" value = "0"/></div>
+			<div class = "ttp_button" style = "width: 8em; float: right;" onclick = "save()">保存本节</div>
+		</div>
+	</div>
+	<div id = "show" class = "showwindow"></div>
+</div>
+
+<hr />
+<small>GX Software 2020-2023 by 南郊居士</small><br />
+
+<div class = "ttp_signal" id = "signal" style = "display: none;">
+	<div style = "overflow-x: auto;">
+	<table style = "margin: 1em; table-layout:fixed;"><tbody>
+		<tr><td class = "signal">℃</td><td class = "signal">°</td><td class = "signal">●</td><td class = "signal">•</td><td class = "signal">‰</td><td class = "signal">×</td><td class = "signal">√</td><td class = "signal">÷</td><td class = "signal">±</td></tr>
+		<tr><td class = "signal">α</td><td class = "signal">β</td><td class = "signal">γ</td><td class = "signal">Φ</td><td class = "signal">Ω</td><td class = "signal">∑</td><td class = "signal">π</td><td class = "signal">θ</td><td class = "signal">μ</td></tr>
+		<tr><td class = "signal">ā</td><td class = "signal">á</td><td class = "signal">ǎ</td><td class = "signal">à</td><td class = "signal">ō</td><td class = "signal">ó</td><td class = "signal">ǒ</td><td class = "signal">ò</td></tr>
+		<tr><td class = "signal">ē</td><td class = "signal">é</td><td class = "signal">ě</td><td class = "signal">è</td><td class = "signal">ī</td><td class = "signal">í</td><td class = "signal">ǐ</td><td class = "signal">ì</td></tr>
+		<tr><td class = "signal">ū</td><td class = "signal">ú</td><td class = "signal">ǔ</td><td class = "signal">ù</td><td class = "signal">ǖ</td><td class = "signal">ǘ</td><td class = "signal">ǚ</td><td class = "signal">ǜ</td><td class = "signal">ü</td></tr>
+		<tr><td class = "signal">←</td><td class = "signal">→</td><td class = "signal">↑</td><td class = "signal">↓</td><td class = "signal">∞</td><td class = "signal">▲</td><td class = "signal">▼</td><td class = "signal">★</td></tr>
+		<tr><td class = "signal">&amp;lt;(&lt;)</td><td class = "signal">&amp;gt;(&gt;)</td><td class = "signal">&amp;amp;(&amp;)</td><td class = "signal">≤</td><td class = "signal">≥</td><td class = "signal">≠</td><td class = "signal">※</td><td class = "signal">△</td></tr>
+	</tbody></table>
+	</div>
+	<div class = "ttp_optioncancel"><div class = "ttp_button" style = "width: 8em;" onclick = "showSignal(false)">关闭</div>
+</div></div>
+
+<div class = "ttp_check" id = "check" style = "display: none;">
+	<div class = "ttp_checkin">
+	<table style = "width: 100%;" id = "checktable">
+		<tr><th>段落序号</th><th>内容</th></tr>
+	</table>
+	</div>
+	<div class = "ttp_optioncancel"><div class = "ttp_button" style = "width: 8em;" onclick = "checkClick('close')">关闭</div></div>
+</div>
+
+</body>
+</html>
