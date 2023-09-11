@@ -132,6 +132,7 @@ input, button, select {
 	margin: 0 8px 0 8px;
 }
 .ttp_mark {
+	text-indent: 2em;
 	border-style: solid;
 	border-color: #000000;
 	border-width: 2px;
