@@ -7,6 +7,8 @@ var fileName, libName; // 读入的题库文件名及题库名
 var lastStr; // 暂存最近的文字
 var modify = false;
 
+var lastVolume = 0, lastChapter = 0, lastSection = 0; // 避免在未保存的时候切到其它章节导致误保存
+
 window.onbeforeunload = function(e)
 {
 	return "no";
@@ -612,33 +614,52 @@ function gotoSection()
 		return;
 	}
 	
+	var vs = document.getElementById("curVolume");
+	var cs = document.getElementById("curChapter");
+	var ss = document.getElementById("curSection");
+
+	if (vs.selectedIndex == lastVolume && cs.selectedIndex == lastChapter && ss.selectedIndex == lastSection) {
+		return;
+	}
+	
 	if (modify) {
 		if (!confirm("当前文档尚未保存，您确认要放弃您的编辑吗？")) {
+			vs.selectedIndex = lastVolume;
+			refreshChapterList("cur", "first");
+			cs.selectedIndex = lastChapter;
+			refreshSectionList("cur", "first");
+			ss.selectedIndex = lastSection;
 			return;
 		}
 		if (!confirm("再确认一次，您确认要放弃您的编辑吗？\n放弃后的编辑内容无法找回！")) {
+			vs.selectedIndex = lastVolume;
+			refreshChapterList("cur", "first");
+			cs.selectedIndex = lastChapter;
+			refreshSectionList("cur", "first");
+			ss.selectedIndex = lastSection;
 			return;
 		}
 	}
 	
-	var vs = document.getElementById("curVolume");
 	var v = xmlMain.getElementsByTagName("volume");
 	if (v.length <= 0) {
 		alert("打开失败，无当前对应节");
 		return;
 	}
-	var cs = document.getElementById("curChapter");
 	var c = v[vs.selectedIndex].getElementsByTagName("chapter");
 	if (c.length <= 0) {
 		alert("打开失败，无当前对应节");
 		return;
 	}
-	var ss = document.getElementById("curSection");
 	var s = c[cs.selectedIndex].getElementsByTagName("section");
 	if (s.length <= 0) {
 		alert("打开失败，无当前对应节");
 		return;
 	}
+
+	lastVolume = vs.selectedIndex;
+	lastChapter = cs.selectedIndex;
+	lastSection = ss.selectedIndex;
 	
 	var str = s[ss.selectedIndex].getElementsByTagName("text")[0].innerHTML;
 	str = str.replace(/^\s+|\s+$/gm, "");
@@ -912,9 +933,53 @@ function add(type)
 		break;
 		
 	case "mark":
-		end = "</p>";
-		start = '<p class="ttp_mark">';
-		break;
+		{
+			end = "</div>";
+			start = '<div class="ttp_mark"';
+
+			var returnList = new Array();
+			for (var i = r.s; i < r.e; i++) {
+				switch(t.value.charAt(i))
+				{
+				case "\r":
+					if (i + 1 < t.value.length && t.value.charAt(i + 1) == "\n") {
+						returnList.push(new range(i, i + 2));
+						i++;
+					}
+					else if (i < t.value.length) {
+						returnList.push(new range(i, i + 1));
+					}
+					break;
+					
+				case "\n":
+					if (i + 1 < t.value.length && t.value.charAt(i + 1) == "\r") {
+						returnList.push(new range(i, i + 2));
+						i++;
+					}
+					else if (i < t.value.length) {
+						returnList.push(new range(i, i + 1));
+					}
+					break;
+				}
+			}
+
+			if (returnList.length < 1) {
+				start += ' style="text-indent:2em;">';
+				t.setRangeText(end, r.e, r.e);
+				t.setRangeText(start, r.s, r.s);
+			}
+			else {
+				start += '><div style="text-indent:2em;">';
+				end += "</div>";
+				t.setRangeText(end, r.e, r.e);
+				for (var i = returnList.length - 1; i >= 0; i--) {
+					t.setRangeText('</div>\r<div style="text-indent:2em;">', returnList[i].s, returnList[i].e);
+				}
+				t.setRangeText(start, r.s, r.s);
+			}
+		}
+		showTest();
+		return;
 		
 	case "sup":
 		end = '</sup>';

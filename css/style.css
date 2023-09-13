@@ -132,7 +132,7 @@ input, button, select {
 	margin: 0 8px 0 8px;
 }
 .ttp_mark {
-	text-indent: 2em;
+	margin: 16px 0 16px 0;
 	border-style: solid;
 	border-color: #000000;
 	border-width: 2px;
@@ -148,6 +148,7 @@ input, button, select {
 table.ttp_table {
 	width: 100%;
 	border-spacing:0px;
+	border-collapse: collapse;
 }
 th.ttp_table, td.ttp_table {
 	border-style: solid;
@@ -367,6 +368,7 @@ th.ttp_table, td.ttp_table {
 /* iOS风格CheckBox样式（高版本支持，保留） */
 /* 本部分参考https://blog.csdn.net/J_Y_X_8/article/details/51191844 */
 .check-switch {
+	appearance: none;
 	-moz-appearance: none;
 	-webkit-appearance: none;
 	outline: none; 
