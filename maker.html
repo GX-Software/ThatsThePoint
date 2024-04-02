@@ -217,6 +217,7 @@ tr.alt th, tr.alt td
 			<div class = "toolbtn" style = "margin-left: 10px;" onclick = "add(this, 'anchor')">添加锚点</div>
 		</div>
 		<div id = "tool-key" style = "display:none;">
+			<div class = "toolbtn" onclick = "add(this, 'mark')">添加笔记</div>
 			<div style = "display: inline-block; line-height: 2em; border-right: 1px solid #38f; padding-right: 6px;">
 				<input id = "red" type = "radio" name = "color" checked /><label for = "red" style = "color: #FF0000;">红色</label>
 				<input id = "green" type = "radio" name = "color" /><label for = "green" style = "color: #008000;">绿色</label>
@@ -229,7 +230,7 @@ tr.alt th, tr.alt td
 			<input id = "wavy" type = "radio" name = "line" /><label for = "wavy" style = "text-decoration:underline; text-decoration-style: wavy;">波浪线</label>
 			<input id = "double" type = "radio" name = "line" /><label for = "double" style = "text-decoration:underline; text-decoration-style: double;">双线</label>
 			<input id = "through" type = "radio" name = "line" /><label for = "through" style = "text-decoration:line-through;">删除线</label>
-			<div class = "toolbtn" style = "margin-left: 10px;" onclick = "add(this, 'key')">添加</div>
+			<div class = "toolbtn" style = "margin-left: 10px;" onclick = "add(this, 'key')">添加重点</div>
 		</div>
 		<div id = "tool-img" style = "display:none;">
 			<input type = "file" id = "openimg" accept = "image/*" style = "display: none;" onchange = "openImage(this)">
@@ -247,6 +248,8 @@ tr.alt th, tr.alt td
 			<label for = "tablerow">行：</label><div class = "ttp_edit" id = "rows" style = "width: 5em;"><input class = "ttp_edit_in" type = "number" id = "tablerow" maxlength = "2" onfocus = "this.select()" value = "2" /></div>
 			<label for = "tablerow">列：</label><div class = "ttp_edit" id = "cols" style = "width: 5em;"><input class = "ttp_edit_in" type = "number" id = "tablecolume" maxlength = "2" onfocus = "this.select()" value = "2" /></div>
 			<input id = "tablehead" type = "checkbox" /><label for = "tablehead">添加表头</label>
+			<input id = "horizon" type = "radio" name = "table" checked /><label for = "horizon">横向表头</label>
+			<input id = "vertical" type = "radio" name = "table" /><label for = "vertical">竖向表头</label>
 			<div class = "toolbtn" style = "margin-left: 10px;" onclick = "add(this, 'table')">添加表格</div>
 		</div>
 	</div>

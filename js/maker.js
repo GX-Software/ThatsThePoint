@@ -18,7 +18,6 @@ var tabList = [
 	{title: "删除", action: selectTab, args: "tool-del",},
 	{title: "段落", action: selectTab, args: "tool-para",},
 	{title: "添加重点", action: selectTab, args: "tool-key",},
-	{title: "添加笔记", action: add, args: "mark",},
 	{title: "添加图片", action: selectTab, args: "tool-img",},
 	{title: "添加链接", action: selectTab, args: "tool-anchor",},
 	{title: "添加表格", action: selectTab, args: "tool-table"}
@@ -344,12 +343,13 @@ function getParentBlock(e)
 		return e;
 	}
 	else if (e && e.nodeName.toLowerCase() == "div") {
-		if (e.parentNode && e.parentNode.getAttribute("class").toLowerCase() == "ttp_mark") {
-			return e.parentNode;
+		if (e.parentNode) {
+			let c = e.parentNode.getAttribute("class");
+			if (c && c.toLowerCase() == "ttp_mark") {
+				return e.parentNode;
+			}
 		}
-		else {
-			return e;
-		}
+		return e;
 	}
 	else {
 		return e;
@@ -1034,8 +1034,10 @@ function save()
 	try {
 		let str = getNewistContent();
 		let match = str.match(/<img[\s\S]*?>/gi);
-		for (const a of match) {
-			str = str.replace(a, a + "</img>");
+		if (match) {
+			for (const a of match) {
+				str = str.replace(a, a + "</img>");
+			}
 		}
 		t.innerHTML = makeReadableContent(str);
 		modify = false;
@@ -1282,19 +1284,39 @@ function add(e, type)
 		let j = 0;
 		if (document.getElementById("tablehead").checked) {
 			let tr = document.createElement("tr");
-			for (let i = 0; i < c; i++) {
+			if (document.getElementById("horizon").checked) {
+				for (let i = 0; i < c; i++) {
+					let tb = document.createElement("th");
+					tb.setAttribute("class", "ttp_table");
+					tb.appendChild(document.createTextNode("1," + (i + 1)));
+					tr.appendChild(tb);
+				}
+			}
+			else {
 				let tb = document.createElement("th");
 				tb.setAttribute("class", "ttp_table");
-				tb.appendChild(document.createTextNode("1," + (i + 1)));
+				tb.appendChild(document.createTextNode("1,1"));
 				tr.appendChild(tb);
+				for (let i = 1; i < c; i++) {
+					let tb = document.createElement("td");
+					tb.setAttribute("class", "ttp_table");
+					tb.appendChild(document.createTextNode("1," + (i + 1)));
+					tr.appendChild(tb);
+				}
 			}
 			b.appendChild(tr);
 			j++;
 		}
 		for (;j < r; j++) {
 			let tr = document.createElement("tr");
+			let tb;
 			for (let i = 0; i < c; i++) {
-				let tb = document.createElement("td");
+				if (document.getElementById("tablehead").checked && document.getElementById("vertical").checked && i == 0) {
+					tb = document.createElement("th")
+				}
+				else {
+					tb = document.createElement("td");
+				}
 				tb.setAttribute("class", "ttp_table");
 				tb.appendChild(document.createTextNode((j + 1) + "," + (i + 1)));
 				tr.appendChild(tb);
