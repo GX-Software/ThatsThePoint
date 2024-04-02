@@ -56,7 +56,6 @@ input, button, select {
 	
 	display: inline-block;
 	line-height: 2em;
-	vertical-align: middle;
 	
 	margin: 5px 0 0 0;
 	padding: 0px;
@@ -368,9 +367,9 @@ th.ttp_table, td.ttp_table {
 /* iOS风格CheckBox样式（高版本支持，保留） */
 /* 本部分参考https://blog.csdn.net/J_Y_X_8/article/details/51191844 */
 .check-switch {
-	appearance: none;
 	-moz-appearance: none;
 	-webkit-appearance: none;
+	appearance: none;
 	outline: none; 
 	display: inline-block;
 	cursor:pointer;

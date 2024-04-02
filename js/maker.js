@@ -1,46 +1,288 @@
 
-var undoList = new Array;
-var undoArray = -1;
-
 var xmlMain; // 读入的题库转换为DOM
 var fileName, libName; // 读入的题库文件名及题库名
 var lastStr; // 暂存最近的文字
+
+var switching = false; // 表示正在切换章节
 var modify = false;
 
-var lastVolume = 0, lastChapter = 0, lastSection = 0; // 避免在未保存的时候切到其它章节导致误保存
+var lastVolume = -1, lastChapter = -1, lastSection = -1; // 避免在未保存的时候切到其它章节导致误保存
+var editScroll = 0;
+
+var undoList = new Array();
+var undoIndex = -1;
+
+var tabList = [
+	{title: "新建", action: selectTab, args: "tool-new",},
+	{title: "保存", action: selectTab, args: "tool-save",},
+	{title: "删除", action: selectTab, args: "tool-del",},
+	{title: "段落", action: selectTab, args: "tool-para",},
+	{title: "添加重点", action: selectTab, args: "tool-key",},
+	{title: "添加笔记", action: add, args: "mark",},
+	{title: "添加图片", action: selectTab, args: "tool-img",},
+	{title: "添加链接", action: selectTab, args: "tool-anchor",},
+	{title: "添加表格", action: selectTab, args: "tool-table"}
+];
+var curTab = null;
 
 window.onbeforeunload = function(e)
 {
 	return "no";
 }
 
+function create(title, parent, fn)
+{
+	var e = document.createElement(title);
+	parent && parent.appendChild(e);
+	fn && fn(e);
+	return e;
+}
+
+var Bind = function(object, fun) {
+	var args = Array.prototype.slice.call(arguments).slice(2);
+	return function() {
+		return fun.apply(window, Array(object, args));
+	}
+}
+
+function createNode(title, text)
+{
+	var d = document.createElement(title);
+	text && d.appendChild(document.createTextNode(text));
+	return d;
+}
+
+function createBrNode(title)
+{
+	var d = document.createElement(title);
+	d.appendChild(document.createElement("br"));
+	return d;
+}
+
+function newInput(doc)
+{
+	let s = doc.getSelection();
+	if (!s.rangeCount) {
+		return;
+	}
+	let r = s.getRangeAt(0);
+	let c = r.endOffset;
+	let d = document.createElement("div");
+	d.appendChild(doc.body.firstChild);
+	doc.body.appendChild(d);
+	r.setStart(d.firstChild, c);
+	r.collapse(true);
+}
+
+function initEdit(e)
+{
+	e.contentEditable = true;
+	e.designMode = "on";
+
+	let l = document.createElement("link");
+	l.setAttribute("rel", "stylesheet");
+	l.setAttribute("type", "text/css");
+	l.setAttribute("href", "css/style.css");
+
+	e.head.appendChild(l);
+}
+
 function initMake()
 {
-	var DEFAULT_VERSION = 8.0;
-	var ua = navigator.userAgent.toLowerCase();
-	var isIE = ua.indexOf("msie") > -1;
-	var safariVersion;
-	if(isIE) {
-		safariVersion =  ua.match(/msie ([\d.]+)/)[1];
-	}
-	if(safariVersion <= DEFAULT_VERSION ) {
-		window.write("您使用的为IE8.0及更旧版本，请升级浏览器后使用!");
+	let DEFAULT_VERSION = 8.0;
+	let ua = navigator.userAgent.toLowerCase();
+	if (ua.indexOf("msie") > -1) {
+		window.write("暂不支持IE浏览器使用");
 		return;
-	};
+	}
+
+	// 编辑器初始化
+	const e = document.getElementById("showi").contentDocument;
+	initEdit(e);
+
+	// 监视编辑器的变化，用于在首次输入内容时，将第一个文字转变为div
+	let compositionInput = false;
+	const config = { characterData: true, childList: true, subtree: true };
+	const observer = new MutationObserver(function (mutationsList, observer) {
+		if (compositionInput) {
+			return;
+		}
+		for (let mutation of mutationsList) {
+			if (mutation.type == "characterData" || mutation.type == "childList") {
+				if (switching) {
+					switching = false;
+				}
+				else {
+					modify = true;
+				}
+			}
+			if (e.body.firstChild && e.body.firstChild.nodeName.toLowerCase() == "#text") {
+				newInput(e);
+			}
+		}
+	});
+	observer.observe(e.body, config);
+
+	// 这个监听是避免用输入法输入时第一个按键被识别为字母
+	e.addEventListener("compositionstart", function(event) {
+		compositionInput = true;
+	})
+	e.addEventListener("compositionend", function(event) {
+		compositionInput = false;
+		if (e.body.firstChild && e.body.firstChild.nodeName.toLowerCase() == "#text") {
+			newInput(e);
+		}
+	});
+
+	// 禁止粘贴格式处理
+	e.addEventListener("paste", function(event) {
+		event.preventDefault();
+
+		let text = (event.clipboardData || window.clipboardData).getData("text");
+		text = text.replaceAll("\r", "");
+		let l = text.split("\n");
+
+		let selection = e.getSelection();
+		if (!selection.rangeCount) {
+			return;
+		}
+		var range = selection.getRangeAt(0);
+
+		// 在同一个节点内粘贴
+		if (range.startContainer == range.endContainer) {
+			let b = e.body;
+			// 如果输入框内没有内容时粘贴
+			if (range.startContainer == b) {
+				for (let i = 0; i < l.length; i++) {
+					b.appendChild(l[i].length ? createNode("div", l[i]) : createBrNode("div"));
+				}
+			}
+			// 如果在最后一个空段落里粘贴
+			else if (range.startContainer.parentNode == b) {
+				range.startContainer.remove();
+				for (let i = 0; i < l.length; i++) {
+					b.appendChild(l[i].length ? createNode("div", l[i]) : createBrNode("div"));
+				}
+			}
+			// 如果输入框里有内容，但仅仅是插入
+			else if (range.collapsed) {
+				let r = range.startContainer.parentNode;
+				// 插入点在开头时不需要拆分
+				if (range.startOffset == 0) {
+					for (let i = 0; i < l.length; i++) {
+						r.parentNode.insertBefore(l[i].length ? createNode("div", l[i]) : createBrNode("div"), r);
+					}
+				}
+				// 插入点在结尾时不需要拆分
+				else if (range.startOffset == range.startContainer.length) {
+					for (let i = l.length - 1; i >= 0; i--) {
+						r.parentNode.insertBefore(l[i].length ? createNode("div", l[i]) : createBrNode("div"), r.nextSibling);
+					}
+				}
+				// 插入点在中间
+				else {
+					let t = range.startContainer.splitText(range.startOffset);
+					let d = document.createElement(range.startContainer.parentNode.nodeName);
+					d.appendChild(t);
+					r.parentNode.insertBefore(d, r.nextSibling);
+					for (let i = l.length - 1; i >= 0; i--) {
+						r.parentNode.insertBefore(l[i].length ? createNode("div", l[i]) : createBrNode("div"), r.nextSibling);
+					}
+				}
+			}
+			// 如果替掉了整段
+			else if (range.startOffset == 0 && range.endOffset == range.endContainer.length) {
+				let r = range.startContainer.parentNode;
+				let d = l[0].length ? createNode("div", l[0]) : createBrNode("div");
+				r.replaceWith(d);
+				r.remove();
+				for (let i = l.length - 1; i > 0; i--) {
+					d.parentNode.insertBefore(l[i].length ? createNode("div", l[i]) : createBrNode("div"), d.nextSibling);
+				}
+			}
+			// 如果只替掉了中间的一部分
+			else {
+				let r = range.startContainer.parentNode;
+				let t = range.startContainer.splitText(range.startOffset);
+				let d = document.createElement(range.startContainer.parentNode.nodeName);
+				d.appendChild(t.splitText(range.endOffset));
+				t.remove();
+				r.parentNode.insertBefore(d, r.nextSibling);
+				for (let i = 0; i < l.length; i++) {
+					d.parentNode.insertBefore(l[i] ? createNode("div", l[i]) : createBrNode("div"), d);
+				}
+			}
+		}
+		// 跨越多个节点粘贴
+		else {
+			let s = range.startContainer.parentNode, e = range.endContainer.parentNode;
+			// 如果开头和结尾都在段的边缘，寻找前后是否还有兄弟节点
+			if (range.startOffset == 0 && range.endOffset == range.endContainer.length) {
+				range.deleteContents();
+				for (let i = 0; i < l.length; i++) {
+					e.parentNode.insertBefore(l[i] ? createNode("div", l[i]) : createBrNode("div"), e);
+				}
+				s.remove();
+				e.remove();
+			}
+			// 如果末尾位于段的末尾，开头不位于段的开始
+			else if (range.endOffset == range.endContainer.length) {
+				range.deleteContents();
+				for (let i = l.length - 1; i >= 0; i--) {
+					s.parentNode.insertBefore(l[i] ? createNode("div", l[i]) : createBrNode("div"), s.nextSibling);
+				}
+				e.remove();
+			}
+			// 其它情况：开头位于段的起始，末尾不位于段的末尾，或者都不在起始末尾
+			else {
+				range.deleteContents();
+				for (let i = 0; i < l.length; i++) {
+					e.parentNode.insertBefore(l[i] ? createNode("div", l[i]) : createBrNode("div"), e);
+				}
+				if (!s.firstChild.length) {
+					s.remove();
+				}
+			}
+		}
+	})
+
+	// 创建工具栏
+	const tab = document.getElementById("tool");
+	for (var i = 0; i < tabList.length; ++i) {
+		var t = create("div", tab);
+		t.className = "tabbtn";
+		t.innerHTML = tabList[i].title;
+		t.value = tabList[i].args;
+
+		t.addEventListener("click", Bind(t, tabList[i].action, tabList[i].args));
+		if (!curTab) {
+			selectTab(t);
+		}
+	}
 }
 
-function range(s, e)
+function selectTab(e)
 {
-	this.s = s;
-	this.e = e;
+	if (curTab) {
+		curTab.style.height = "";
+		curTab.style.backgroundColor = "#f8f8f8";
+		curTab.style.color = "";
+		document.getElementById(curTab.value).style.display = "none";
+	}
+
+	e.style.height = "40px";
+	e.style.backgroundColor = "#38f";
+	e.style.color = "#fff";
+	document.getElementById(e.value).style.display = "";
+	curTab = e;
 }
 
-function openFile()
+function openFile(f)
 {
 	document.getElementById("curfile").innerHTML = "当前题库：未打开";
 	
 	// 获取读取我文件的File对象
-	var selectedFile = document.getElementById('open').files[0];
+	var selectedFile = f.files[0];
 	if (!selectedFile) {
 		alert("打开知识库文件失败！");
 		return;
@@ -55,7 +297,7 @@ function openFile()
 	
 	fileName = selectedFile.name; // 读取选中文件的文件名
 
-	var reader = new FileReader(); // 这是核心,读取操作就是由它完成.
+	var reader = new FileReader(); // 这是核心，读取操作就是由它完成.
 	reader.readAsText(selectedFile);
 	reader.onload = function(evt) {
 		var i = evt.target.result.indexOf("<?xml");
@@ -65,7 +307,6 @@ function openFile()
 		}
 		var t = evt.target.result.substr(i);
 
-		// 暂时不支持从零开始创建
 		xmlMain = (new DOMParser()).parseFromString(t, "text/xml");
 		if (!xmlMain) {
 			alert("分析失败，知识库文件成分不完整！");
@@ -84,13 +325,67 @@ function openFile()
 		refreshVolumeList("sel", "first");
 		
 		// 清空状态，防止重新读取时不读取。
-		var test = document.getElementById('open');
-		test.outerHTML = test.outerHTML;
-		
+		f.outerHTML = f.outerHTML;
 		document.getElementById("curfile").innerHTML = "当前题库：" + libName;
 		
-		clearInput();
+		gotoSection();
 	}
+}
+
+function getParentBlock(e)
+{
+	if (e.nodeType == Node.TEXT_NODE) {
+		e = e.parentNode;
+	}
+	while(e && e.nodeName.toLowerCase() == "span") {
+		e = e.parentNode;
+	}
+	if (e && e.nodeName.toLowerCase() == "p") {
+		return e;
+	}
+	else if (e && e.nodeName.toLowerCase() == "div") {
+		if (e.parentNode && e.parentNode.getAttribute("class").toLowerCase() == "ttp_mark") {
+			return e.parentNode;
+		}
+		else {
+			return e;
+		}
+	}
+	else {
+		return e;
+	}
+}
+
+function openImage(f)
+{
+	let fr = new FileReader();
+	fr.onload = function(e) {
+		let edit = document.getElementById("showi").contentDocument;
+		let selObj = edit.getSelection();
+		if (!selObj.rangeCount) {
+			return;
+		}
+		let range = selObj.getRangeAt(0);
+
+		addUndo();
+		let d = document.createElement("div");
+		d.setAttribute("style", "text-align:center;");
+		let i = document.createElement("img");
+		i.setAttribute("src", fr.result);
+		i.setAttribute("title", "img");
+		d.appendChild(i);
+
+		if (range.startContainer == edit.body) {
+			edit.body.appendChild(d);
+		}
+		else {
+			let e = getParentBlock(range.startContainer);
+			e.parentNode.insertBefore(d, e.nextSibling);
+		}
+
+		f.outerHTML = f.outerHTML;
+	}
+	fr.readAsDataURL(f.files[0]);
 }
 
 function wrapText(context, text, x, y, maxWidth, lineHeight, verticalAlign)
@@ -221,9 +516,8 @@ function saveFile(type)
 
 function clearInput()
 {
-	document.getElementById("input").value = "";
-	showTest();
-	
+	document.getElementById("showi").contentDocument.body.innerHTML = "";
+	document.getElementById("origin").value = "";
 	document.getElementById("quote").value = "";
 }
 
@@ -245,11 +539,11 @@ function checkChange()
 
 function clearAllSelects(id)
 {
-	var s = document.getElementById(id);
+	let s = document.getElementById(id);
 	if (!s) {
 		return;
 	}
-	for (var i = s.length - 1; i >= 0; i--) {
+	for (let i = s.length - 1; i >= 0; i--) {
 		s.remove(i);
 	}
 }
@@ -596,15 +890,52 @@ function makeDel()
 	alert("无可删除内容！");
 }
 
-function beginEdit(lock)
+function delFormat()
 {
-	if (lock) {
-		document.getElementById("unlock").style.display = "none";
-		document.getElementsByTagName("body")[0].style.overflow = "hidden";
+	let selObj = document.getElementById("showi").contentDocument.getSelection();
+	if (!selObj.rangeCount) {
+		return;
+	}
+	let range = selObj.getRangeAt(0);
+	if (!range.collapsed) {
+		alert("不支持批量清除格式！");
+		return;
+	}
+
+	let start = range.startContainer.parentNode;
+	switch(start.nodeName.toLowerCase())
+	{
+	case "p":
+	case "div":
+		{
+			let d = createNode("div", start.innerText);
+			start.parentNode.insertBefore(d, start);
+			start.remove();
+		}
+		break;
+
+	case "span":
+		{
+			let t = document.createTextNode(start.innerText);
+			start.parentNode.insertBefore(t, start);
+			start.remove();
+			t.parentNode.normalize();
+		}
+		break;
+
+	default:
+		alert("意外的删除项！" + start.nodeName);
+		break;
+	}
+}
+
+function getNewistContent()
+{
+	if (document.getElementById("original").checked) {
+		return document.getElementById("origin").value;
 	}
 	else {
-		document.getElementById("unlock").style.display = "";
-		document.getElementsByTagName("body")[0].style.overflow = "";
+		return document.getElementById("showi").contentDocument.body.innerHTML;
 	}
 }
 
@@ -664,25 +995,18 @@ function gotoSection()
 	var str = s[ss.selectedIndex].getElementsByTagName("text")[0].innerHTML;
 	str = str.replace(/^\s+|\s+$/gm, "");
 	
-	var input = document.getElementById("input");
-	input.value = str;
-	input.scrollTop = 0;
-	document.getElementById("show").scrollTop = 0;
+	document.getElementById("showi").contentDocument.body.innerHTML = str;
+	document.getElementById("showi").contentDocument.body.scrollTop = 0;
+	editScroll = 0;
+	document.getElementById("origin").value = str;
 	
+	switching = true;
 	modify = false;
 	initAnchor();
-	showTest();
-}
-
-function changeText()
-{
-	modify = true;
 }
 
 function save()
 {
-	beginEdit(false);
-	
 	if (!xmlMain) {
 		return;
 	}
@@ -708,7 +1032,12 @@ function save()
 	var t = s[ss.selectedIndex].getElementsByTagName("text")[0];
 	
 	try {
-		t.innerHTML = document.getElementById("input").value;
+		let str = getNewistContent();
+		let match = str.match(/<img[\s\S]*?>/gi);
+		for (const a of match) {
+			str = str.replace(a, a + "</img>");
+		}
+		t.innerHTML = makeReadableContent(str);
 		modify = false;
 		alert("保存成功！");
 	}
@@ -717,7 +1046,6 @@ function save()
 	}
 	
 	initAnchor();
-	showTest();
 }
 
 function makeSource()
@@ -744,313 +1072,280 @@ function makeSource()
 	return str;
 }
 
-function textSelect(s, e)
+function checkRadio(name)
 {
-	var t = document.getElementById("input");
-	if (t.setSelectionRange) {
-		t.setSelectionRange(s, e);	
+	for (let r of document.getElementsByName(name)) {
+		if (r && r.checked) {
+			return r.id;
+		}
 	}
-	else if (t.createTextRange) {
-		var rang = t.createTextRange();
-		rang.collapse(true);
-		rang.moveStart('character', start);
-		rang.moveEnd('character', end - start);
-		rang.select();	
-	}
-	t.focus();
+	return null;
 }
 
-function getSelectedText()
+function moveAllChilds(n, s)
 {
-	var t = document.getElementById("input");
-	if (window.getSelection) {
-		if (t.selectionStart != undefined && t.selectionEnd != undefined) {
-			return new range(t.selectionStart, t.selectionEnd);
-		}
-		else {
-			return null;
-		}
-	}
-	else {
-		var s = t.value.indexOf(document.selection.createRange().text);
-		return new range(s, s + document.selection.createRange().text.length);
+	let a = s.firstChild, b;
+	while(a) {
+		b = a.nextSibling;
+		n.appendChild(a);
+		a = b;
 	}
 }
 
-function add(type)
+function add(e, type)
 {
-	var r = getSelectedText();
-	if (!r || r.s >= r.e) {
+	let edit = document.getElementById("showi").contentDocument;
+	let selObj = edit.getSelection();
+	if (!selObj.rangeCount) {
 		return;
 	}
-	
-	changeText();
-	
-	var t = document.getElementById("input");
-	addUndo(t.value);
-	
-	var start = "", end = "", style = "";
-	switch(type)
-	{
-	case "para":
-		{
-			if (document.getElementById("paralist").checked) {
-				end = "</li></ul></p>";
-			}
-			else {
-				end = "</p>";
-			}
-			if (!document.getElementById("paralist").checked) {
-				if (document.getElementById("intend").checked) {
-					style += "text-indent:2em;";
-				}
-				if (document.getElementById("parabold").checked) {
-					style += "font-weight:bold;";
-				}
-				if (document.getElementById("paracenter").checked) {
-					style += "text-align:center;";
-				}
-			}
-			start = "<p";
-			if (style.length) {
-				start += ' style="' + style + '"';
-			}
-			
-			var anchorstart = start;
-			if (document.getElementById("addanchor").checked) {
-				anchorstart += getAnchor();
-			}
-			start += ">";
-			if (document.getElementById("paralist").checked) {
-				start += "<ul><li>";
-			}
-			anchorstart += ">";
-			if (document.getElementById("paralist").checked) {
-				anchorstart += "<ul><li>";
-			}
-			
-			var returnList = new Array();
-			for (var i = r.s; i < r.e; i++) {
-				switch(t.value.charAt(i))
-				{
-				case "\r":
-					if (i + 1 < t.value.length && t.value.charAt(i + 1) == "\n") {
-						returnList.push(new range(i, i + 2));
-						i++;
-					}
-					else if (i < t.value.length) {
-						returnList.push(new range(i, i + 1));
-					}
-					break;
-					
-				case "\n":
-					if (i + 1 < t.value.length && t.value.charAt(i + 1) == "\r") {
-						returnList.push(new range(i, i + 2));
-						i++;
-					}
-					else if (i < t.value.length) {
-						returnList.push(new range(i, i + 1));
-					}
-					break;
-				}
-			}
-			
-			t.setRangeText(end, r.e, r.e);
-			for (var i = returnList.length - 1; i >= 0; i--) {
-				t.setRangeText(end + "\r" + start, returnList[i].s, returnList[i].e);
-			}
-			
-			// 多个段落添加锚点时，只有第一个段落有锚点。
-			if (document.getElementById("addanchor").checked) {
-				t.setRangeText(anchorstart, r.s, r.s);
-			}
-			else {
-				t.setRangeText(start, r.s, r.s);
-			}
-			
-			// 添加锚点后自动取消选中
-			document.getElementById("addanchor").checked = false;
-		}
-		showTest();
-		return;
-		
-	case "key":
-		end = "</span>";
-		if (document.getElementById("addcolor").checked) {
-			style += "color:";
-			switch(getRadioValue("color"))
-			{
-			case 0:
-				style += "#FF0000;";
-				break;
-				
-			case 1:
-				style += "#008000;";
-				break;
-				
-			case 2:
-				style += "#FFD700;";
-				break;
-				
-			case 3:
-				style += "#0000FF;";
-				break;
-				
-			case 4:
-				style += "#000;";
-				break;
-			}
-			style += "font-weight:bold;";
-		}
-		if (document.getElementById("addline").checked) {
-			switch(getRadioValue("line"))
-			{
-			case 0:
-				style += "text-decoration:underline;text-decoration-style:solid;";
-				break;
-				
-			case 1:
-				style += "text-decoration:underline;text-decoration-style:wavy;";
-				break;
-				
-			case 2:
-				style += "text-decoration:underline;text-decoration-style:double;";
-				break;
-				
-			case 3:
-				style += "text-decoration:line-through;";
-				break;
-			}
-		}
-		start = "<span";
-		if (style.length) {
-			start += ' style="' + style + '"';
-		}
-		else {
+	let range = selObj.getRangeAt(0);
+
+	addUndo();
+	if (type == "para") {
+		let start = range.startContainer.parentNode, end = range.endContainer.parentNode;
+		// 没有任何内容，直接返回
+		if (start == edit.body) {
 			return;
 		}
-		start += ">";
-		break;
-		
-	case "mark":
-		{
-			end = "</div>";
-			start = '<div class="ttp_mark"';
-
-			var returnList = new Array();
-			for (var i = r.s; i < r.e; i++) {
-				switch(t.value.charAt(i))
-				{
-				case "\r":
-					if (i + 1 < t.value.length && t.value.charAt(i + 1) == "\n") {
-						returnList.push(new range(i, i + 2));
-						i++;
-					}
-					else if (i < t.value.length) {
-						returnList.push(new range(i, i + 1));
-					}
-					break;
-					
-				case "\n":
-					if (i + 1 < t.value.length && t.value.charAt(i + 1) == "\r") {
-						returnList.push(new range(i, i + 2));
-						i++;
-					}
-					else if (i < t.value.length) {
-						returnList.push(new range(i, i + 1));
-					}
+		while(start) {
+			if (start.nodeName == "p") {
+				if (start == end) {
 					break;
 				}
+				start = start.nextSibling;
+				continue;
 			}
 
-			if (returnList.length < 1) {
-				start += ' style="text-indent:2em;">';
-				t.setRangeText(end, r.e, r.e);
-				t.setRangeText(start, r.s, r.s);
+			let p = document.createElement("p");
+			let style = "";
+			if (document.getElementById("intend").checked) {
+				style += "text-indent:2em;";
+			}
+			if (document.getElementById("parabold").checked) {
+				style += "font-weight:bold";
+			}
+			if (document.getElementById("paracenter").checked) {
+				style += "text-align:center";
+			}
+			p.setAttribute("style", style);
+			
+			if (document.getElementById("paralist").checked) {
+				let u = document.createElement("ul");
+				let l = document.createElement("li");
+				p.appendChild(u);
+				u.appendChild(l);
+				moveAllChilds(l, start);
 			}
 			else {
-				start += '><div style="text-indent:2em;">';
-				end += "</div>";
-				t.setRangeText(end, r.e, r.e);
-				for (var i = returnList.length - 1; i >= 0; i--) {
-					t.setRangeText('</div>\r<div style="text-indent:2em;">', returnList[i].s, returnList[i].e);
-				}
-				t.setRangeText(start, r.s, r.s);
+				moveAllChilds(p, start);
+			}
+			start.replaceWith(p);
+
+			if (start == end) {
+				break;
+			}
+			start = p.nextSibling;
+			while(start.nodeType == Node.TEXT_NODE) {
+				p = start.nextSibling;
+				start.remove();
+				start = p;
 			}
 		}
-		showTest();
-		return;
-		
-	case "sup":
-		end = '</sup>';
-		start = '<sup>';
-		break;
-		
-	case "sub":
-		end = '</sub>';
-		start = '<sub>';
-		break;
-		
-	case "quote":
+		start.remove();
+	}
+	else if (type == "key") {
+		if (range.collapsed) {
+			return;
+		}
+		let span = document.createElement("span");
+		try {
+			range.surroundContents(span);
+		} catch (error) {
+			window.alert("请不要跨段落添加重点！");
+		}
+
+		let style = "";
+		switch(checkRadio("color"))
 		{
-			var str = document.getElementById("quote").value;
-			if (!str || !str.length) {
-				return;
-			}
+		case "red":
+			style += "color:#FF0000;font-weight:bold;";
+			break;
+
+		case "green":
+			style += "color:#008000;font-weight:bold;";
+			break;
 			
-			end = "</span>";
-			start = '<span class="ttp_jumpto" onclick="quote(' + "'" + str + "'" + ')">';
+		case "yellow":
+			style += "color:#FFD700;font-weight:bold;";
+			break;
+			
+		case "blue":
+			style += "color:#0000FF;font-weight:bold;";
+			break;
 		}
-		break;
+		switch(checkRadio("line"))
+		{
+		case "straight":
+			style += "text-decoration:underline;text-decoration-style:solid;";
+			break;
+			
+		case "wavy":
+			style += "text-decoration:underline;text-decoration-style:wavy;";
+			break;
+			
+		case "double":
+			style += "text-decoration:underline;text-decoration-style:double;";
+			break;
+			
+		case "through":
+			style += "text-decoration:line-through;";
+			break;
+		}
+		span.setAttribute("style", style);
+
+		range.setStart(span.firstChild, span.firstChild.length);
+		range.collapse(true);
 	}
-	
-	t.setRangeText(end, r.e, r.e);
-	t.setRangeText(start, r.s, r.s);
-	showTest();
-}
+	else if (type == "mark") {
+		let start = range.startContainer.parentNode, end = range.endContainer.parentNode;
+		if (start == edit.body) {
+			return;
+		}
 
-function showSignal(show)
-{
-	document.getElementById("signal").style.display = show ? "" : "none";
-}
+		let d = document.createElement("div");
+		d.setAttribute("class", "ttp_mark");
+		start.parentNode.insertBefore(d, start);
+		while(start) {
+			let p = start.nextSibling;
+			let e = document.createElement("div");
+			e.setAttribute("style", "text-indent:2em;");
+			moveAllChilds(e, start);
+			d.appendChild(e);
+			if (start == end) {
+				break;
+			}
+			start.remove();
+			start = p;
+			while(start.nodeType == Node.TEXT_NODE) {
+				p = start.nextSibling;
+				start.remove();
+				start = p;
+			}
+		}
+		start.remove();
+	}
+	else if (type == "anchor") {
+		let start = range.startContainer.parentNode;
+		if (start.nodeName.toLowerCase() != "p") {
+			alert("只能在段落中添加锚点！")
+			return;
+		}
+		start.setAttribute("anchor", getAnchor());
+	}
+	else if (type == "quote") {
+		if (range.collapsed) {
+			return;
+		}
+		let str = document.getElementById("quote").value;
+		if (!str || !str.length) {
+			return;
+		}
 
-function getRadioValue(name)
-{
-	var l = document.getElementsByName(name);
-	for (var i = 0; i < l.length; i++) {
-		if (l[i].checked) {
-			return i;
+		let span = document.createElement("span");
+		try {
+			range.surroundContents(span);
+		} catch (error) {
+			window.alert("请不要跨段落添加重点！");
+		}
+
+		span.setAttribute("class", "ttp_jumpto");
+		span.setAttribute("onclick", "quote('" + str + "')");
+
+		range.setStart(span.firstChild, span.firstChild.length);
+		range.collapse(true);
+	}
+	else if (type == "table") {
+		let t = document.createElement("table");
+		t.setAttribute("class", "ttp_table");
+		let b = document.createElement("tbody");
+		t.appendChild(b);
+
+		let r = parseInt(document.getElementById("tablerow").value);
+		if (r !== r) {
+			r = 2;
+		}
+		let c = parseInt(document.getElementById("tablecolume").value);
+		if (c !== c) {
+			c = 2;
+		}
+		let j = 0;
+		if (document.getElementById("tablehead").checked) {
+			let tr = document.createElement("tr");
+			for (let i = 0; i < c; i++) {
+				let tb = document.createElement("th");
+				tb.setAttribute("class", "ttp_table");
+				tb.appendChild(document.createTextNode("1," + (i + 1)));
+				tr.appendChild(tb);
+			}
+			b.appendChild(tr);
+			j++;
+		}
+		for (;j < r; j++) {
+			let tr = document.createElement("tr");
+			for (let i = 0; i < c; i++) {
+				let tb = document.createElement("td");
+				tb.setAttribute("class", "ttp_table");
+				tb.appendChild(document.createTextNode((j + 1) + "," + (i + 1)));
+				tr.appendChild(tb);
+			}
+			b.appendChild(tr);
+		}
+		
+		if (range.startContainer == edit.body) {
+			edit.body.appendChild(t);
+		}
+		else {
+			let e = getParentBlock(range.startContainer);
+			e.parentNode.insertBefore(t, e.nextSibling);
 		}
 	}
-	
-	return -1;
 }
 
-function showTest()
+function makeReadableContent(s)
 {
-	document.getElementById("show").innerHTML = document.getElementById("input").value;
+	let a = s;
+	a = a.replaceAll("</p><p", "</p>\n<p");
+	a = a.replaceAll("</div><div", "</div>\n<div");
+	a = a.replaceAll("</p><div", "</p>\n<div");
+	a = a.replaceAll("</div><p", "</div>\n<p");
+	a = a.replaceAll("><table", ">\n<table");
+	a = a.replaceAll("<tbody><", "<tbody>\n<");
+	a = a.replaceAll("</tr><", "</tr>\n<");
+	a = a.replaceAll("</table><", "</table>\n<")
+
+	return a;
 }
 
-function addUndo(str)
+function showOriginal(e)
 {
-	undoArray++;
-	undoList[undoArray] = str;
-	if (undoList.length > 20) {
-		undoList.splice(0, 1);
-		undoArray--;
+	switching = true;
+	let s = document.getElementById("showi"), o = document.getElementById("origin");
+	if (e.checked) {
+		editScroll = s.contentDocument.body.scrollTop;
+		s.style.display = "none";
+		o.value = makeReadableContent(s.contentDocument.body.innerHTML);
+		o.style.display = "";
 	}
-}
-
-function undo()
-{
-	if (undoArray < 0) {
-		undoArray = -1;
-		return;
+	else {
+		let a = o.value;
+		a = a.replaceAll("\n", "");
+		a = a.replaceAll("\r", "");
+		s.contentDocument.body.innerHTML = a;
+		s.style.display = "";
+		s.contentDocument.body.scrollTop = editScroll;
+		o.style.display = "none";
 	}
-	
-	document.getElementById("input").value = undoList[undoArray];
-	undoArray--;
-	showTest();
 }
 
 function openCheckWindow()
@@ -1110,11 +1405,6 @@ function openCheckWindow()
 	t.scrollTop = an.offsetTop - t.offsetHeight * 0.5;
 }
 
-function quote(str)
-{
-	// 防止点击内容中的链接
-}
-
 function checkClick(str)
 {
 	switch(str)
@@ -1130,10 +1420,11 @@ function checkClick(str)
 
 function initAnchor()
 {
-	var a = 0;
+	let a = 0;
+	let t = getNewistContent();
 	for (; a < 1000; a++) {
 		var i = 'anchor="' + a + '"';
-		if (document.getElementById("input").value.indexOf(i) < 0) {
+		if (t.indexOf(i) < 0) {
 			break;
 		}
 	}
@@ -1150,7 +1441,7 @@ function getAnchor()
 		a = 0;
 	}
 	
-	var str = document.getElementById("input").value;
+	var str = getNewistContent();
 	for (; a < 1000; a++) {
 		var i = 'anchor="' + a + '"';
 		if (str.indexOf(i) < 0) {
@@ -1162,44 +1453,24 @@ function getAnchor()
 	return (' anchor="' + a + '"');
 }
 
-function fix()
+function addUndo()
 {
-	var s = document.getElementById("show");
-	var p = s.getElementsByTagName("p");
-	if (!p || !p.length) {
+	undoIndex++;
+	undoList[undoIndex] = getNewistContent();
+	if (undoIndex > 20) {
+		undoList.splice(0, 1);
+		undoIndex--;
+	}
+}
+
+function undo()
+{
+	if (undoIndex < 0) {
+		undoIndex = -1;
 		return;
 	}
-	
-	var i;
-	for (i = 0; i < p.length; i++) {
-		if (p[i].offsetTop - p[0].offsetTop >= s.scrollTop) {
-			break;
-		}
-	}
-	
-	var c = document.getElementById("input");
-	var start = c.value.indexOf(p[i].outerHTML);
-	if (start < 0) {
-		return;
-	}
-	var end = start + p[i].outerHTML.length;
-	
-	if(c.setSelectionRange)
-	{
-		var fullText = c.value;
-		c.value = fullText.substring(0, end);
-		var scrollHeight = c.scrollHeight;
-		c.value = fullText;
-		
-		var scrollTop = scrollHeight;
-		if (scrollTop > c.clientHeight){
-			scrollTop -= c.clientHeight * 0.1;
-		}
-		else {
-			scrollTop = 0;
-		}
-		c.scrollTop = scrollTop;
-		c.setSelectionRange(start, end);
-		c.focus();
-	}
+
+	document.getElementById("showi").contentDocument.body.innerHTML = undoList[undoIndex];
+	document.getElementById("origin").value = undoList[undoIndex];
+	undoIndex--;
 }
