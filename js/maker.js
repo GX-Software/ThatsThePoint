@@ -1003,6 +1003,9 @@ function gotoSection()
 	switching = true;
 	modify = false;
 	initAnchor();
+
+	undoList.splice(0);
+	undoIndex = -1;
 }
 
 function save()
@@ -1039,6 +1042,7 @@ function save()
 				str = str.replace(a, a + "</img>");
 			}
 		}
+		str = str.replaceAll("<hr>", "<hr/>");
 		t.innerHTML = makeReadableContent(str);
 		modify = false;
 		alert("保存成功！");
@@ -1105,7 +1109,7 @@ function add(e, type)
 
 	addUndo();
 	if (type == "para") {
-		let start = range.startContainer.parentNode, end = range.endContainer.parentNode;
+		let start = getParentBlock(range.startContainer), end = getParentBlock(range.endContainer);
 		// 没有任何内容，直接返回
 		if (start == edit.body) {
 			return;
@@ -1210,7 +1214,7 @@ function add(e, type)
 		range.collapse(true);
 	}
 	else if (type == "mark") {
-		let start = range.startContainer.parentNode, end = range.endContainer.parentNode;
+		let start = getParentBlock(range.startContainer), end = getParentBlock(range.endContainer);
 		if (start == edit.body) {
 			return;
 		}
@@ -1457,22 +1461,22 @@ function initAnchor()
 
 function getAnchor()
 {
-	var a = document.getElementById("anchor").value;
+	let a = document.getElementById("anchor").value;
 	a = parseInt(a);
 	if (a !== a) {
 		a = 0;
 	}
 	
-	var str = getNewistContent();
+	let str = getNewistContent();
 	for (; a < 1000; a++) {
-		var i = 'anchor="' + a + '"';
+		let i = 'anchor="' + a + '"';
 		if (str.indexOf(i) < 0) {
 			break;
 		}
 	}
 	
 	document.getElementById("anchor").value = a + 1;
-	return (' anchor="' + a + '"');
+	return a;
 }
 
 function addUndo()
