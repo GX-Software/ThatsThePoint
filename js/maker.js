@@ -1189,6 +1189,10 @@ function add(e, type)
 		case "blue":
 			style += "color:#0000FF;font-weight:bold;";
 			break;
+
+		case "bold":
+			style += "font-weight:bold;";
+			break;
 		}
 		switch(checkRadio("line"))
 		{
