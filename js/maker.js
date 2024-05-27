@@ -1,6 +1,6 @@
 
-var xmlMain; // 读入的题库转换为DOM
-var fileName, libName; // 读入的题库文件名及题库名
+var xmlMain; // 读入的知识库转换为DOM
+var fileName, libName; // 读入的知识库文件名及知识库名
 var lastStr; // 暂存最近的文字
 
 var switching = false; // 表示正在切换章节
@@ -86,6 +86,33 @@ function initEdit(e)
 	e.head.appendChild(l);
 }
 
+function insertTextBefore(p, t)
+{
+	let tt = document.createTextNode(t);
+	if (!p.firstChild) {
+		p.appendChild(tt);
+	}
+	else if (p.firstChild.nodeType != Node.TEXT_NODE) {
+		console.log("意外的粘贴位置！");
+	}
+	else {
+		p.insertBefore(tt, p.firstChild);
+		p.normalize();
+	}
+}
+
+function insertTextAfter(p, t)
+{
+	let tt = document.createTextNode(t);
+	if (p.firstChild && p.firstChild.nodeType != Node.TEXT_NODE) {
+		console.log("意外的粘贴位置！");
+	}
+	else {
+		p.appendChild(tt);
+		p.normalize();
+	}
+}
+
 function initMake()
 {
 	let DEFAULT_VERSION = 8.0;
@@ -150,42 +177,60 @@ function initMake()
 		// 在同一个节点内粘贴
 		if (range.startContainer == range.endContainer) {
 			let b = e.body;
-			// 如果输入框内没有内容时粘贴
+			// 如果在输入框的最开头粘贴
 			if (range.startContainer == b) {
-				for (let i = 0; i < l.length; i++) {
-					b.appendChild(l[i].length ? createNode("div", l[i]) : createBrNode("div"));
+				if (b.firstChild) {
+					insertTextBefore(b.firstChild, l[l.length - 1]);
+					for (let i = l.length - 2; i >= 0; i--) {
+						b.insertBefore(l[i].length ? createNode("div", l[i]) : createBrNode("div"), b.firstChild);
+					}
+				}
+				else {
+					for (let i = 0; i < l.length; i++) {
+						b.appendChild(l[i].length ? createNode("div", l[i]) : createBrNode("div"));
+					}
 				}
 			}
 			// 如果在最后一个空段落里粘贴
 			else if (range.startContainer.parentNode == b) {
-				range.startContainer.remove();
-				for (let i = 0; i < l.length; i++) {
-					b.appendChild(l[i].length ? createNode("div", l[i]) : createBrNode("div"));
+				for (let i = l.length - 1; i >= 0; i--) {
+					b.insertBefore(l[i].length ? createNode("div", l[i]) : createBrNode("div"), range.startContainer.nextSibling);
 				}
+				range.startContainer.remove();
 			}
 			// 如果输入框里有内容，但仅仅是插入
 			else if (range.collapsed) {
 				let r = range.startContainer.parentNode;
 				// 插入点在开头时不需要拆分
 				if (range.startOffset == 0) {
-					for (let i = 0; i < l.length; i++) {
+					insertTextBefore(r, l[l.length - 1]);
+					for (let i = 0; i < l.length - 1; i++) {
 						r.parentNode.insertBefore(l[i].length ? createNode("div", l[i]) : createBrNode("div"), r);
 					}
 				}
 				// 插入点在结尾时不需要拆分
 				else if (range.startOffset == range.startContainer.length) {
-					for (let i = l.length - 1; i >= 0; i--) {
+					insertTextAfter(r, l[0]);
+					for (let i = l.length - 1; i > 0; i--) {
 						r.parentNode.insertBefore(l[i].length ? createNode("div", l[i]) : createBrNode("div"), r.nextSibling);
 					}
 				}
 				// 插入点在中间
 				else {
 					let t = range.startContainer.splitText(range.startOffset);
-					let d = document.createElement(range.startContainer.parentNode.nodeName);
-					d.appendChild(t);
-					r.parentNode.insertBefore(d, r.nextSibling);
-					for (let i = l.length - 1; i >= 0; i--) {
-						r.parentNode.insertBefore(l[i].length ? createNode("div", l[i]) : createBrNode("div"), r.nextSibling);
+					if (l.length <= 1) {
+						r.insertBefore(document.createTextNode(l[0]), t);
+						r.normalize();
+					}
+					else {
+						let d = document.createElement(range.startContainer.parentNode.nodeName);
+						d.appendChild(t);
+						r.parentNode.insertBefore(d, r.nextSibling);
+						insertTextAfter(r, l[0]);
+						insertTextBefore(d, l[l.length - 1]);
+						for (let i = l.length - 2; i > 0; i--) {
+							r.parentNode.insertBefore(l[i].length ? createNode("div", l[i]) : createBrNode("div"), r.nextSibling);
+						}
 					}
 				}
 			}
@@ -203,12 +248,22 @@ function initMake()
 			else {
 				let r = range.startContainer.parentNode;
 				let t = range.startContainer.splitText(range.startOffset);
-				let d = document.createElement(range.startContainer.parentNode.nodeName);
-				d.appendChild(t.splitText(range.endOffset));
-				t.remove();
-				r.parentNode.insertBefore(d, r.nextSibling);
-				for (let i = 0; i < l.length; i++) {
-					d.parentNode.insertBefore(l[i] ? createNode("div", l[i]) : createBrNode("div"), d);
+				if (l.length <= 1) {
+					let n = t.splitText(range.endOffset);
+					t.remove();
+					r.insertBefore(document.createTextNode(l[0]), n);
+					r.normalize();
+				}
+				else {
+					let d = document.createElement(range.startContainer.parentNode.nodeName);
+					d.appendChild(t.splitText(range.endOffset));
+					t.remove();
+					r.parentNode.insertBefore(d, r.nextSibling);
+					insertTextAfter(r, l[0]);
+					insertTextBefore(d, l[l.length - 1]);
+					for (let i = 1; i < l.length - 1; i++) {
+						d.parentNode.insertBefore(l[i] ? createNode("div", l[i]) : createBrNode("div"), d);
+					}
 				}
 			}
 		}
@@ -227,7 +282,8 @@ function initMake()
 			// 如果末尾位于段的末尾，开头不位于段的开始
 			else if (range.endOffset == range.endContainer.length) {
 				range.deleteContents();
-				for (let i = l.length - 1; i >= 0; i--) {
+				insertTextAfter(s, l[0]);
+				for (let i = l.length - 1; i > 0; i--) {
 					s.parentNode.insertBefore(l[i] ? createNode("div", l[i]) : createBrNode("div"), s.nextSibling);
 				}
 				e.remove();
@@ -235,11 +291,22 @@ function initMake()
 			// 其它情况：开头位于段的起始，末尾不位于段的末尾，或者都不在起始末尾
 			else {
 				range.deleteContents();
-				for (let i = 0; i < l.length; i++) {
-					e.parentNode.insertBefore(l[i] ? createNode("div", l[i]) : createBrNode("div"), e);
-				}
-				if (!s.firstChild.length) {
+				if (l.length <= 1) {
+					insertTextBefore(e, l[0]);
+					insertTextBefore(e, s.firstChild.wholeText);
 					s.remove();
+				}
+				else {
+					if (s.firstChild.length) {
+						insertTextAfter(s, l[0]);
+					}
+					else {
+						s.remove();
+					}
+					insertTextBefore(e, l[l.length - 1]);
+					for (let i = 1; i < l.length - 1; i++) {
+						e.parentNode.insertBefore(l[i] ? createNode("div", l[i]) : createBrNode("div"), e);
+					}
 				}
 			}
 		}
@@ -278,7 +345,7 @@ function selectTab(e)
 
 function openFile(f)
 {
-	document.getElementById("curfile").innerHTML = "当前题库：未打开";
+	document.getElementById("curfile").innerHTML = "当前知识库：未打开";
 	
 	// 获取读取我文件的File对象
 	var selectedFile = f.files[0];
@@ -301,7 +368,7 @@ function openFile(f)
 	reader.onload = function(evt) {
 		var i = evt.target.result.indexOf("<?xml");
 		if (i < 0) {
-			alert("题库格式可能已被破坏，无法打开！");
+			alert("知识库格式可能已被破坏，无法打开！");
 			return;
 		}
 		var t = evt.target.result.substr(i);
@@ -325,7 +392,7 @@ function openFile(f)
 		
 		// 清空状态，防止重新读取时不读取。
 		f.outerHTML = f.outerHTML;
-		document.getElementById("curfile").innerHTML = "当前题库：" + libName;
+		document.getElementById("curfile").innerHTML = "当前知识库：" + libName;
 		
 		gotoSection();
 	}
@@ -807,11 +874,11 @@ function makeNew(str)
 		
 	case "library":
 		if (xmlMain) {
-			if (!confirm("当前有已打开的知识库，是否需要保存？\n未保存的题库将无法找回。")) {
+			if (!confirm("当前有已打开的知识库，是否需要保存？\n未保存的知识库将无法找回。")) {
 				return;
 			}
 		}
-		title = prompt("请输入新建的知识库名，取消则放弃新建", "新建题库");
+		title = prompt("请输入新建的知识库名，取消则放弃新建", "新建知识库");
 		if (!title) {
 			return;
 		}
@@ -832,10 +899,17 @@ function makeNew(str)
 			alert("新建知识库失败");
 			return;
 		}
+
+		clearAllSelects("curVolume");
+		clearAllSelects("curChapter");
+		clearAllSelects("curSection");
+		clearAllSelects("selectVolume");
+		clearAllSelects("selectChapter");
+		clearAllSelects("selectSection");
 		
 		libName = title;
 		fileName = "";
-		document.getElementById("curfile").innerHTML = "当前题库：" + libName;
+		document.getElementById("curfile").innerHTML = "当前知识库：" + libName;
 	}
 	
 	clearInput();
@@ -994,6 +1068,7 @@ function gotoSection()
 	
 	var str = s[ss.selectedIndex].getElementsByTagName("text")[0].innerHTML;
 	str = str.replace(/^\s+|\s+$/gm, "");
+	str = str.replaceAll("&amp;", "&");
 	
 	document.getElementById("showi").contentDocument.body.innerHTML = str;
 	document.getElementById("showi").contentDocument.body.scrollTop = 0;
@@ -1043,6 +1118,8 @@ function save()
 			}
 		}
 		str = str.replaceAll("<hr>", "<hr/>");
+		str = str.replaceAll("<br>", "<br/>");
+		str = str.replaceAll("&", "&amp;");
 		t.innerHTML = makeReadableContent(str);
 		modify = false;
 		alert("保存成功！");
