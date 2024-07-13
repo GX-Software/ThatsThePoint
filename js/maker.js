@@ -196,6 +196,15 @@ function initMake()
 				for (let i = l.length - 1; i >= 0; i--) {
 					b.insertBefore(l[i].length ? createNode("div", l[i]) : createBrNode("div"), range.startContainer.nextSibling);
 				}
+				range.startContainer.remove();b
+			}
+			// 如果在笔记框里粘贴一个空段落（段落里只有一个BR），在这里单独处理
+			else if (range.startContainer.childNodes.length == 1 && range.startContainer.childNodes[0].nodeName.toUpperCase() == "BR") {
+				for (let i = l.length - 1; i >= 0; i--) {
+					let n = range.startContainer.cloneNode(false);
+					insertTextBefore(n, l[i]);
+					range.startContainer.parentNode.insertBefore(n, range.startContainer.nextSibling);
+				}
 				range.startContainer.remove();
 			}
 			// 如果输入框里有内容，但仅仅是插入
@@ -1325,10 +1334,16 @@ function add(e, type)
 	else if (type == "anchor") {
 		let start = range.startContainer.parentNode;
 		if (start.nodeName.toLowerCase() != "p") {
-			alert("只能在段落中添加锚点！")
+			alert("只能在段落中添加锚点！");
+			return;
+		}
+		let attr = start.getAttribute("anchor");
+		if (attr) {
+			alert("请勿重复添加锚点！");
 			return;
 		}
 		start.setAttribute("anchor", getAnchor());
+		modify = true;
 	}
 	else if (type == "quote") {
 		if (range.collapsed) {
